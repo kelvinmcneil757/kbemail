@@ -1,0 +1,442 @@
+{
+  "name": "Knowledge Base Email Workflow v1",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        160,
+        180
+      ],
+      "id": "86a45096-4270-480d-9f96-3999811abaad",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "5JCmTqdsYgXtcXuL",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the email body (HTML or plain text)\nconst emailBody = $json[\"textHtml\"] || $json[\"textPlain\"] || \"\";\nconst emailSubject = $json[\"subject\"] || \"No Subject\";\nconst senderEmail = $json[\"from\"] || \"no-reply@bright-horizons.com\";\n\n// Function to strip HTML tags\nfunction stripHtml(html) {\n  return html\n    .replace(/<[^>]+>/g, '')  // Remove HTML tags\n    .replace(/&nbsp;/g, ' ')  // Replace HTML non-breaking spaces\n    .replace(/&amp;/g, '&')   // Replace HTML ampersands\n    .replace(/&lt;/g, '<')    // Replace less-than symbols\n    .replace(/&gt;/g, '>')    // Replace greater-than symbols\n    .replace(/(\\r\\n|\\n|\\r)/gm, \" \")  // Remove line breaks\n    .trim();\n}\n\n// Clean the email body\nconst cleanQuery = stripHtml(emailBody);\n\n// Optional: Remove common signature lines\nconst queryLines = cleanQuery.split('\\n').filter(line => \n  !line.toLowerCase().includes(\"regards\") &&\n  !line.toLowerCase().includes(\"sincerely\") &&\n  !line.toLowerCase().includes(\"thank you\") &&\n  !line.toLowerCase().includes(\"best\") &&\n  !line.toLowerCase().includes(\"sent from my\") &&\n  !line.toLowerCase().includes(\"--\")\n);\n\n// Reconstruct the final query\nconst finalQuery = queryLines.join(\" \").trim();\n\n// Return both the query and the subject, and the sender's email\nreturn {\n  query: finalQuery,\n  subject: emailSubject,\n  sender: senderEmail\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        180
+      ],
+      "id": "15fbb329-bfaf-4661-92eb-dc4159262e72",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Set default Airtable base ID\nreturn {\n  baseId: \"appJjx9u65OT6Fhuo\"  // Replace with your actual Airtable base ID\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        180
+      ],
+      "id": "0430459e-61cc-449e-99d2-f6bbe07652e0",
+      "name": "Set Base ID"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "list",
+        "application": {
+          "__rl": true,
+          "value": "https://airtable.com/appJjx9u65OT6Fhuo/tblOmUywGDvTTQ3Cw/viwA5Ry4U8DqCMeuy?blocks=hide",
+          "mode": "url"
+        },
+        "table": "Camps",
+        "additionalOptions": {}
+      },
+      "name": "Airtable Fetch Camps",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -20
+      ],
+      "id": "7c93ef4b-8090-46f3-8d1c-2124e86f99c2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "MzHapEfQgTecIfJq",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "list",
+        "application": {
+          "__rl": true,
+          "value": "https://airtable.com/appJjx9u65OT6Fhuo/tblgpH6DLmmTnLEU7/viwPi8jDtNEq5fZZd",
+          "mode": "url"
+        },
+        "table": "Campers",
+        "additionalOptions": {}
+      },
+      "name": "Airtable Fetch Campers",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        800,
+        180
+      ],
+      "id": "b00a0d66-472b-4dfa-9b77-6404835ecf41",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "MzHapEfQgTecIfJq",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "list",
+        "application": {
+          "__rl": true,
+          "value": "https://airtable.com/appJjx9u65OT6Fhuo/tblSZKZdCBPZrAkhS/viwLNJSopLdnRdNaG?blocks=hide",
+          "mode": "url"
+        },
+        "table": "Documents",
+        "additionalOptions": {}
+      },
+      "name": "Airtable Fetch Documents",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        800,
+        380
+      ],
+      "id": "497fd834-91c0-4481-ae61-96e777e1cf0c",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "MzHapEfQgTecIfJq",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Get the user query from the merged input\nconst userQuery = $json.query || \"\";\nconst userSubject = $json.subject || \"No Subject\";\nconst userSender = $json.sender || \"no-reply@bright-horizons.com\";\n\n// Extract merged Airtable data\nconst mergedItems = $input.all();\nlet camps = [], campers = [], documents = [];\n\nfor (const item of mergedItems) {\n  const data = item.json;\n  if (data && data.fields) {\n    if (data.fields.StartDate || data.fields.EndDate) {\n      camps.push(data);\n    } else if (data.fields.Type || data.fields.URL) {\n      documents.push(data);\n    } else {\n      campers.push(data);\n    }\n  }\n}\n\n// Build context\nconst context = {\n  totalCamps: camps.length,\n  totalCampers: campers.length,\n  campNames: camps.map(camp => camp.fields.Name || 'Unnamed Camp').join(', '),\n  campDates: camps.map(camp => ({\n    name: camp.fields.Name || 'Unnamed Camp',\n    startDate: camp.fields.StartDate || 'Not specified',\n    endDate: camp.fields.EndDate || 'Not specified'\n  })),\n  documentsInfo: documents.map(doc => ({\n    name: doc.fields.Name || 'Unnamed Document',\n    type: doc.fields.Type || 'Unknown Type',\n    content: doc.fields.Content || 'Content not available',\n    url: doc.fields.URL || ''\n  }))\n};\n\n// Return the final structured data\nreturn {\n  query: userQuery,\n  subject: userSubject,\n  sender: userSender,\n  context: JSON.stringify(context)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        180
+      ],
+      "id": "8c23b94a-1d5d-4061-80bb-2500a52e581a",
+      "name": "Prepare Context"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n\"model\": \"gpt-4\",\n\"messages\": [\n{\n\"role\": \"system\",\n\"content\": \"You are an advanced intelligent assistant designed to provide clear, accurate and well-reasoned answers for Bright Horizons Summer Camps. Answer questions using the provided context data about camps, campers, and documents. Be concise and direct in your answers. If the information cannot be found in the context, acknowledge that and suggest what information might help answer the question better.\"\n},\n{\n\"role\": \"user\",\n\"content\": \"Question: \" + $input.item.json.query + \"\\n\\nAvailable Context: \" + $input.item.json.context\n}\n],\n\"max_tokens\": 500,\n\"temperature\": 0.5\n}\n}}",
+        "options": {
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1460,
+        180
+      ],
+      "id": "3d1e798c-91e5-4f28-94b0-5bd38c90dadd",
+      "name": "HTTP Request Generate AI Answer"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1cQRbIP6Ws1E9IIqZvrMYy94t-ZJKx8co0V-YWkcmpDc/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1cQRbIP6Ws1E9IIqZvrMYy94t-ZJKx8co0V-YWkcmpDc/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ DateTime.now().toISO() }}",
+            "User Query": "={{ $input.item.json.query }}",
+            "AI Answer": "={{ $json.choices[0].message.content }}",
+            "Document Names": "={{ $input.item.json.context ? (function() { try { return JSON.parse($input.item.json.context).documentsInfo.map(doc => doc.name).join(', '); } catch(e) { return ''; } })() : '' }}",
+            "ID": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "User Query",
+              "displayName": "User Query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Answer",
+              "displayName": "AI Answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Document Names",
+              "displayName": "Document Names",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1680,
+        180
+      ],
+      "id": "28fa6b83-a725-4734-b63c-9d3b3bd63154",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MC37IBSnX39pVs6g",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "knowledgebase.dava@gmail.com",
+        "toEmail": "={{ $input.item.json.sender || $('Code').item.json.sender }}",
+        "subject": "Answer: {{ $input.item.json.subject || \"Your Question about Bright Horizons Camps\" }}",
+        "html": "=Hi there,\n\nHere is the answer to your question:\n\n<b>Your Question:</b> {{ $input.item.json.query }}<br/><br/>\n<b>Answer:</b> {{ $('HTTP Request Generate AI Answer').item.json.choices[0].message.content }}<br/><br/>\n\nThis information is based on our camp records. If you have any further questions, feel free to email us again.\n\nBest regards,<br/>\nBright Horizons Knowledge Base",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1900,
+        180
+      ],
+      "id": "8c225ef6-474a-439b-adc7-d008c194f7fa",
+      "name": "Send Email",
+      "webhookId": "6463c948-4096-4f6e-b087-4967314a8e95",
+      "credentials": {
+        "smtp": {
+          "id": "KPJ1z8GslMmjswG1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine"
+      },
+      "name": "Merge Airtable Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        180
+      ],
+      "id": "ec574b1f-57d9-480a-bf21-efe9ca50e17c"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Set Base ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Base ID": {
+      "main": [
+        [
+          {
+            "node": "Airtable Fetch Camps",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Airtable Fetch Campers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Airtable Fetch Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Fetch Camps": {
+      "main": [
+        [
+          {
+            "node": "Merge Airtable Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Generate AI Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Generate AI Answer": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Airtable Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Fetch Campers": {
+      "main": [
+        [
+          {
+            "node": "Merge Airtable Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Airtable Fetch Documents": {
+      "main": [
+        [
+          {
+            "node": "Merge Airtable Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c8aca63d-c697-4d75-9163-bc4bd572fc18",
+  "meta": {
+    "instanceId": "001fa8e53cd85d998324a5057f502011382873a507426b660d754b2f2e07f78c"
+  },
+  "id": "kNoQGj0vjYCI6bRA",
+  "tags": []
+}
